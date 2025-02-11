@@ -15,8 +15,8 @@ import { supabase } from '@/utils/supabase'
 
 type Prueba1 = {
 	id: number
-	title: string
-	description: string
+	email: string
+	name: string
 }
 
 export default function App() {
@@ -28,7 +28,7 @@ export default function App() {
 	useEffect(() => {
 		const getTodos = async () => {
 			try {
-				let { data, error } = await supabase.from('prueba1').select('*')
+				let { data, error } = await supabase.from('users_table').select('*')
 				if (error) {
 					console.error('Error fetching todos:', error.message)
 					return
@@ -60,7 +60,7 @@ export default function App() {
 			}
 			setPrueba1([
 				...prueba1,
-				{ id: Date.now(), title: newTitle, description: newDescription },
+				{ id: Date.now(), name: newTitle, email: newDescription },
 			])
 			setNewTitle('')
 			setNewDescription('')
@@ -89,8 +89,8 @@ export default function App() {
 				keyExtractor={(item) => item.id.toString()}
 				renderItem={({ item }) => (
 					<View style={styles.itemContainer}>
-						<Text style={styles.itemTitle}>{item.title}</Text>
-						<Text style={styles.itemDescription}>{item.description}</Text>
+						<Text style={styles.itemTitle}>{item.name}</Text>
+						<Text style={styles.itemDescription}>{item.email}</Text>
 					</View>
 				)}
 				contentContainerStyle={styles.listContent}
