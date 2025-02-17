@@ -3,8 +3,14 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "app/*"
+      ]
     }
   },
-  "extends": "expo/tsconfig.base"
+  "extends": "expo/tsconfig.base",
+  "include": [
+    "app",
+    "nativewind-env.d.ts"
+  ] // Incluye la carpeta 'app'
 }

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "prueba1",
-    "slug": "prueba1",
+    "name": "streetCare",
+    "slug": "streetCare",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
