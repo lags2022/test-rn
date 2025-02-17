@@ -1,6 +1,8 @@
-const { getDefaultConfig } = require("expo/metro-config");
-const { withNativeWind } = require("nativewind/metro");
+const { getDefaultConfig } = require('expo/metro-config')
+const { withNativeWind } = require('nativewind/metro')
 
-const config = getDefaultConfig(__dirname);
+// Obtener la configuración predeterminada de Expo
+const config = getDefaultConfig(__dirname)
 
-module.exports = withNativeWind(config, { input: "./global.css" });
+// Aplicar NativeWind con el archivo global.css
+module.exports = withNativeWind(config, { input: './global.css' })
