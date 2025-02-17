@@ -1,220 +1,134 @@
-import { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
 	View,
-	Text,
-	Alert,
-	TouchableOpacity,
 	FlatList,
+	TouchableOpacity,
+	Text,
+	ActivityIndicator,
 	Modal,
-	TextInput,
-	Button,
-	StyleSheet,
 } from 'react-native'
+import Animated, { FadeInRight, FadeOutRight } from 'react-native-reanimated'
 
+import AddUserModal from '@/components/AddUserModal'
+import UserDetailsBottomSheet from '@/components/UserDetailsBottomSheet'
+import { UserProps } from '@/interfaces/user'
 import { supabase } from '@/utils/supabase'
 
-type User = {
-	id: number
-	email: string
-	name: string
-}
+export default function Home() {
+	const [users, setUsers] = useState<UserProps[]>([])
+	const [selectedUser, setSelectedUser] = useState<UserProps | null>(null)
+	const [showAddUserModal, setShowAddUserModal] = useState(false)
 
-export const Home = () => {
-	const [user, setUser] = useState<User[]>([])
-	const [modalVisible, setModalVisible] = useState(false)
-	const [newName, setNewName] = useState('')
-	const [newEmail, setNewEmail] = useState('')
-
+	// Al montar, obtenemos la lista de usuarios
 	useEffect(() => {
-		const getTodos = async () => {
-			try {
-				let { data, error } = await supabase.from('users_table').select('*')
-				if (error) {
-					console.error('Error fetching todos:', error.message)
-					return
-				}
-				if (data && data.length > 0) {
-					setUser(data)
-				}
-			} catch (error: any) {
-				console.error('Error fetching todos:', error.message)
-			}
-		}
-		getTodos()
+		fetchUsers()
 	}, [])
 
-	const addNewItem = async () => {
-		if (!newName || !newEmail) {
-			Alert.alert('Error', 'Por favor, completa todos los campos.')
-			return
-		}
-
+	const fetchUsers = async () => {
 		try {
-			const { data, error } = await supabase
-				.from('users_table')
-				.insert([{ name: newName, email: newEmail }])
-			if (error) {
-				console.error('Error adding item:', error.message)
-				Alert.alert('Error', 'No se pudo agregar el elemento.')
-				return
-			}
-			const newUser = {
-				id: new Date().getTime(),
-				name: newName,
-				email: newEmail,
-			} satisfies User
-
-			setUser([...user, newUser])
-
-			setNewName('')
-			setNewEmail('')
-			setModalVisible(false)
+			const { data, error } = await supabase.from('users_table').select('*')
+			if (error) throw new Error(error.message)
+			setUsers(data || [])
 		} catch (error: any) {
-			console.error('Error adding item:', error.message)
+			console.error('Error fetching users:', error.message)
 		}
 	}
 
+	// Se llama cuando se ha creado un nuevo usuario
+	const handleUserCreated = (newUser: UserProps) => {
+		// Opción A: Actualizar la lista localmente
+		setUsers((prev) => [newUser, ...prev])
+
+		// Opción B: Volver a consultar toda la lista de Supabase
+		// fetchUsers()
+	}
+
+	const handleUserPress = (user: UserProps) => {
+		setSelectedUser(user)
+	}
+
+	const handleCloseUserDetails = () => {
+		setSelectedUser(null)
+	}
+
+	const handleOpenAddUserModal = () => {
+		setShowAddUserModal(true)
+	}
+
+	const handleCloseAddUserModal = () => {
+		setShowAddUserModal(false)
+	}
+
 	return (
-		<View style={styles.container}>
+		<View className="flex-1 bg-white dark:bg-black">
 			{/* Header */}
-			<View style={styles.header}>
-				<Text style={styles.title}>Lista de Tareas</Text>
+			<View className="p-4 flex-row items-center justify-center bg-white dark:bg-black shadow-md">
+				<Text className="flex-1 text-xl font-bold text-center text-black dark:text-white">
+					Lista de Usuarios
+				</Text>
+
+				{/* Botón + para abrir modal */}
 				<TouchableOpacity
-					style={styles.addButton}
-					onPress={() => setModalVisible(true)}
+					onPress={handleOpenAddUserModal}
+					className="bg-blue-600 dark:bg-blue-700 px-3 py-1 rounded-full"
 				>
-					<Text style={styles.addButtonText}>+</Text>
+					<Text className="text-white font-bold text-lg">+</Text>
 				</TouchableOpacity>
 			</View>
 
-			{/* Lista de elementos */}
-			<FlatList
-				data={user}
-				keyExtractor={(item) => item.id.toString()}
-				renderItem={({ item }) => (
-					<View style={styles.itemContainer}>
-						<Text style={styles.itemTitle}>{item.name}</Text>
-						<Text style={styles.itemDescription}>{item.email}</Text>
-					</View>
-				)}
-				contentContainerStyle={styles.listContent}
-			/>
-
-			{/* Modal para agregar nuevos elementos */}
-			<Modal visible={modalVisible} animationType="slide" transparent>
-				<View style={styles.modalContainer}>
-					<View style={styles.modalContent}>
-						<Text style={styles.modalTitle}>Agregar Nuevo Elemento</Text>
-						<TextInput
-							placeholder="Título"
-							value={newName}
-							onChangeText={setNewName}
-							style={styles.input}
-						/>
-						<TextInput
-							placeholder="Descripción"
-							value={newEmail}
-							onChangeText={setNewEmail}
-							style={styles.input}
-						/>
-						<View style={styles.modalButtons}>
-							<Button
-								title="Cancelar"
-								onPress={() => setModalVisible(false)}
-								color="#FF4500"
-							/>
-							<Button title="Guardar" onPress={addNewItem} color="#32CD32" />
-						</View>
-					</View>
+			{/* Lista de usuarios */}
+			{users.length === 0 ? (
+				<View className="flex-1 items-center justify-center">
+					<ActivityIndicator size="large" color="#8888ff" />
+					<Text className="text-black dark:text-white mt-4">Cargando...</Text>
 				</View>
+			) : (
+				<FlatList
+					data={users}
+					keyExtractor={(item) => item.id.toString()}
+					contentContainerStyle={{ padding: 16 }}
+					renderItem={({ item }) => (
+						<Animated.View
+							entering={FadeInRight.delay(100)}
+							exiting={FadeOutRight}
+							style={{ marginBottom: 8 }}
+						>
+							<TouchableOpacity
+								onPress={() => handleUserPress(item)}
+								className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm"
+							>
+								<Text className="text-lg font-semibold text-black dark:text-white">
+									{item.name}
+								</Text>
+								<Text className="text-gray-700 dark:text-gray-300">
+									{item.email}
+								</Text>
+							</TouchableOpacity>
+						</Animated.View>
+					)}
+				/>
+			)}
+
+			{/* Bottom Sheet de detalles de usuario */}
+			{selectedUser && (
+				<UserDetailsBottomSheet
+					user={selectedUser}
+					onClose={handleCloseUserDetails}
+				/>
+			)}
+
+			{/* Modal para crear usuario */}
+			<Modal
+				animationType="slide"
+				transparent
+				visible={showAddUserModal}
+				onRequestClose={handleCloseAddUserModal}
+			>
+				<AddUserModal
+					onClose={handleCloseAddUserModal}
+					onUserCreated={handleUserCreated} // Pasamos el callback
+				/>
 			</Modal>
 		</View>
 	)
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: '#f5f5f5',
-		paddingTop: 40,
-	},
-	header: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		paddingHorizontal: 20,
-		marginBottom: 20,
-	},
-	title: {
-		fontSize: 24,
-		fontWeight: 'bold',
-		color: '#333',
-	},
-	addButton: {
-		backgroundColor: '#32CD32',
-		width: 50,
-		height: 50,
-		borderRadius: 25,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	addButtonText: {
-		fontSize: 30,
-		color: '#fff',
-	},
-	listContent: {
-		paddingHorizontal: 20,
-	},
-	itemContainer: {
-		backgroundColor: '#fff',
-		padding: 15,
-		borderRadius: 10,
-		marginBottom: 10,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 5,
-		elevation: 2,
-	},
-	itemTitle: {
-		fontSize: 18,
-		fontWeight: 'bold',
-		color: '#333',
-	},
-	itemDescription: {
-		fontSize: 14,
-		color: '#666',
-		marginTop: 5,
-	},
-	modalContainer: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-		backgroundColor: 'rgba(0, 0, 0, 0.5)',
-	},
-	modalContent: {
-		backgroundColor: '#fff',
-		padding: 20,
-		borderRadius: 10,
-		width: '80%',
-	},
-	modalTitle: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		textAlign: 'center',
-		marginBottom: 20,
-		color: '#333',
-	},
-	input: {
-		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 5,
-		padding: 10,
-		marginBottom: 15,
-		fontSize: 16,
-	},
-	modalButtons: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-	},
-})
